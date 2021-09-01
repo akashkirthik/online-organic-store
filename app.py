@@ -34,12 +34,14 @@ def farmerLogin():
         account = cursor.fetchone()
         if account and check_password_hash(account['password'], password):
             session['farmer_id'] = account['farmer_id']
+            cursor.close()
             return redirect('/stock', loggedIn=True)
         else:
             flash('Wrong credentials !')
+            cursor.close()
             return render_template('farmerlogin.html')
     else:
-
+        cursor.close()
         return render_template('farmerlogin.html')
 
 
@@ -54,6 +56,7 @@ def customerLogin():
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT * FROM buyer WHERE email_id = % s', (email,))
         account = cursor.fetchone()
+        cursor.close()
         if account and check_password_hash(account['password'], password):
             session['buyer_id'] = account['buyer_id']
             return redirect('/shop')
@@ -81,6 +84,7 @@ def farmerSignUp():
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT * FROM farmer WHERE email_id = % s', (email,))
         account = cursor.fetchone()
+
         if account:
 
             flash('User email already taken !')
@@ -92,6 +96,7 @@ def farmerSignUp():
                 (name, age, gender, contact, email, experience, landarea, door, street, locality, city, pincode,
                  hashedPWD))
             mysql.connection.commit()
+            cursor.close()
             return redirect(url_for('farmerLogin'))
 
     return render_template('farm.html')
@@ -124,6 +129,7 @@ def customerSignUp():
                 (name, age, gender, contact, email, door, street, locality, city, pincode,
                  hashedPWD))
             mysql.connection.commit()
+            cursor.close()
             return redirect(url_for('customerLogin'))
 
     return render_template('cust.html')
@@ -157,7 +163,7 @@ def stocks():
 
         if y:
             return_data.append({'name': y['name'], 'available_quantity': y['available_quantity'], 'stock_id': i})
-
+    cursor.close()
     print(return_data)
     return_data = None if return_data == [] else return_data
     return render_template('stock.html', f_id=farmer_id, ret_data=return_data)
@@ -189,6 +195,7 @@ def addStock():
         'INSERT INTO holds VALUES (  % s, % s, % s , % s )',
         (s_id, p_id, product, 0))
     mysql.connection.commit()
+    cursor.close()
     flash('Added Successfully')
     return redirect('/stock'.format(farmer_id))
 
@@ -217,6 +224,7 @@ def updateStock():
                        (quantity, product, uStockID))
         flash('updated stock values')
     mysql.connection.commit()
+    cursor.close()
     return redirect('/stock'.format(farmer_id))
 
 
@@ -241,7 +249,7 @@ def buyProduct(product_id):
         'SELECT h.name,h.available_quantity, s.city,p.price,s.stock_id,p.product_id from holds h, stock s , product p where h.product_id= %s and h.stock_id=s.stock_id and h.product_id=p.product_id ',
         (product_id,))
     res = cursor.fetchall()
-
+    cursor.close()
     if len(res) == 0:
         flash('Out of stock ')
     return render_template('buy.html', ret_data=res)
@@ -283,6 +291,7 @@ def addToCart(stock_id):
         (tmp['cart_id'],))
     total = cursor.fetchone()['total']
     print(total)
+    cursor.close()
     return render_template('cart.html', cart_item=result, total=total)
 
 
@@ -314,6 +323,7 @@ def addItem(stock_id):
         (tmp['cart_id'],))
     total = cursor.fetchone()['total']
     print(total)
+    cursor.close()
     return render_template('cart.html', cart_item=result, total=total)
 
 
@@ -349,6 +359,7 @@ def removeItem(stock_id):
         (tmp['cart_id'],))
     total = cursor.fetchone()['total']
     print(total)
+    cursor.close()
     return render_template('cart.html', cart_item=result, total=total)
 
 
@@ -362,6 +373,7 @@ def checkout():
         'select sum(c.price) as amount from cart c, assign a where c.buyer_id=%s  and c.buyer_id=a.buyer_id and a.cart_id=c.cart_id',
         (buyer_id,))
     amount = cursor.fetchone()['amount']
+    cursor.close()
     return render_template('payment.html', amount=amount)
 
 
@@ -392,6 +404,7 @@ def pay():
     else:
         mysql.connection.commit()
         flash('PAYMENT DONE')
+    cursor.close()
     return redirect('/shop')
 
 
