@@ -232,6 +232,8 @@ def updateStock():
 def loggedShop():
     if "buyer_id" not in session:
         return redirect('/customerLogin')
+    if 'purchased' in session:
+        session.pop('purchased')
     buyer_id = session['buyer_id']
     return render_template('shop.html', b_id=buyer_id)
 
@@ -381,6 +383,8 @@ def checkout():
 def pay():
     if 'buyer_id' not in session:
         return redirect('/customerLogin')
+    if 'purchased'  in session:
+        return redirect('/shop')
     buyer_id = session['buyer_id']
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
     cursor.execute('select sum(price),stock_id as amount,cart_id from cart where buyer_id=%s', (buyer_id,))
@@ -388,7 +392,8 @@ def pay():
     amount = result['amount']
 
     cart_id = result['cart_id']
-    cursor.execute('insert into payment values(null,%s,%s,%s,%s)',
+
+    cursor.execute('insert into payment values(null,%s,%s,%s,%s,current_timestamp )',
                    (buyer_id, cart_id, amount, request.form.get("paymentMethod")))
     cursor.execute('select stock_id,quantity from cart where buyer_id=%s', (buyer_id,))
     result = cursor.fetchall()
@@ -405,6 +410,7 @@ def pay():
         mysql.connection.commit()
         flash('PAYMENT DONE')
     cursor.close()
+    session['purchased']=True
     return redirect('/shop')
 
 
